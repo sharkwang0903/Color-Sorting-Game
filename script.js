@@ -33,6 +33,7 @@
     resultView: document.querySelector("#resultView"),
     resultDifficulty: document.querySelector("#resultDifficulty"),
     scoreOutput: document.querySelector("#scoreOutput"),
+    rawScoreOutput: document.querySelector("#rawScoreOutput"),
     errorChart: document.querySelector("#errorChart"),
     playAgainButton: document.querySelector("#playAgainButton"),
     interactionStatus: document.querySelector("#interactionStatus")
@@ -383,6 +384,17 @@
     }, 0);
   }
 
+  function calculateMaxScore(movableCount) {
+    const maxScorePerRow = Math.floor((movableCount ** 2) / 2);
+    return maxScorePerRow * ROW_COUNT;
+  }
+
+  function calculateNormalizedScore(rawScore, movableCount) {
+    const maxScore = calculateMaxScore(movableCount);
+    const normalizedScore = Math.round(100 * (1 - rawScore / maxScore));
+    return Math.max(0, Math.min(100, normalizedScore));
+  }
+
   function calculateScore() {
     const errorsById = new Map();
     let totalScore = 0;
@@ -402,6 +414,7 @@
 
     return {
       totalScore,
+      normalizedScore: calculateNormalizedScore(totalScore, DIFFICULTIES[state.difficulty].movableCount),
       hueErrors: state.colors.map((color) => ({
         hue: color.hue,
         error: errorsById.get(color.id) ?? 0,
@@ -524,7 +537,8 @@
     const result = calculateScore();
 
     state.resultErrors = result.hueErrors;
-    elements.scoreOutput.textContent = String(result.totalScore);
+    elements.scoreOutput.textContent = `${result.normalizedScore} / 100`;
+    elements.rawScoreOutput.textContent = `原始誤差：${result.totalScore}`;
     elements.resultDifficulty.textContent = `${DIFFICULTIES[state.difficulty].label}難度結果`;
     elements.gameView.hidden = true;
     elements.resultView.hidden = false;
@@ -551,6 +565,14 @@
     const correct = [1, 2, 3, 4, 5];
     console.assert(calculateSequenceScore(correct, [2, 1, 3, 4, 5]) === 2, "計分範例 1 驗證失敗");
     console.assert(calculateSequenceScore(correct, [2, 5, 1, 3, 4]) === 8, "計分範例 2 驗證失敗");
+    console.assert(calculateMaxScore(4) === 32, "簡單難度最大誤差驗證失敗");
+    console.assert(calculateMaxScore(8) === 128, "中等難度最大誤差驗證失敗");
+    console.assert(calculateMaxScore(16) === 512, "困難／專家最大誤差驗證失敗");
+    console.assert(calculateNormalizedScore(0, 4) === 100, "完美排序正規化分數驗證失敗");
+    console.assert(calculateNormalizedScore(32, 4) === 0, "簡單最差排列正規化分數驗證失敗");
+    console.assert(calculateNormalizedScore(128, 8) === 0, "中等最差排列正規化分數驗證失敗");
+    console.assert(calculateNormalizedScore(512, 16) === 0, "困難／專家最差排列正規化分數驗證失敗");
+    console.assert(calculateNormalizedScore(16, 16) === 97, "困難 raw 16 正規化分數驗證失敗");
   }
 
   function initialize() {

@@ -412,10 +412,12 @@ body.is-sorting {
 .score {
   display: block;
   margin: 12px 0 8px;
-  font-size: clamp(4.5rem, 11vw, 8rem);
+  font-size: clamp(2.75rem, 4vw, 4.75rem);
   font-weight: 650;
-  letter-spacing: -0.08em;
+  letter-spacing: -0.06em;
   line-height: 0.9;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .score-note {

@@ -58,13 +58,15 @@
     <section class="result-view" id="resultView" aria-labelledby="result-heading" hidden>
       <div class="result-summary">
         <p class="eyebrow" id="resultDifficulty">簡單難度結果</p>
-        <h2 id="result-heading">測試結果</h2>
-        <output class="score" id="scoreOutput" aria-live="polite">0</output>
-        <p class="score-note">分數越低越好。<br>完美分數：0。</p>
+        <h2 id="result-heading">排序分數</h2>
+        <output class="score" id="scoreOutput" aria-live="polite">100 / 100</output>
+        <p class="score-note">100 分代表完美排序。</p>
         <div class="score-formula" aria-label="分數計算方式">
           <p class="score-formula-title">分數怎麼計算？</p>
-          <p class="formula">總分 = Σ |玩家位置 − 正確位置|</p>
-          <p>逐一計算每個色塊的位置誤差，再將四排的誤差全部加總。</p>
+          <p class="formula">原始誤差 = Σ |玩家位置 − 正確位置|</p>
+          <p>原始誤差越低越好，0 代表完全正確。</p>
+          <p id="rawScoreOutput">原始誤差：0</p>
+          <p>排序分數會將原始誤差依該難度的理論最大誤差換算為 0～100 分。</p>
         </div>
         <button class="primary-button" id="playAgainButton" type="button">再玩一次</button>
       </div>
