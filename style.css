@@ -129,7 +129,7 @@ h2 {
 
 .segmented-control {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 4px;
   padding: 4px;
   border: 1px solid var(--line);
@@ -172,6 +172,10 @@ h2 {
 }
 
 .game-view[data-difficulty="hard"] {
+  --board-width: 100%;
+}
+
+.game-view[data-difficulty="expert"] {
   --board-width: 100%;
 }
 
@@ -330,6 +334,14 @@ body.is-sorting {
 }
 
 .game-rows[data-difficulty="hard"] .color-tile {
+  border-radius: 6px;
+}
+
+.game-rows[data-difficulty="expert"] .color-strip {
+  gap: clamp(2px, 0.4vw, 5px);
+}
+
+.game-rows[data-difficulty="expert"] .color-tile {
   border-radius: 6px;
 }
 
@@ -589,6 +601,15 @@ body.is-sorting {
   }
 
   .game-rows[data-difficulty="hard"] .color-tile {
+    border-width: 0;
+    border-radius: 3px;
+  }
+
+  .game-rows[data-difficulty="expert"] .color-strip {
+    gap: 2px;
+  }
+
+  .game-rows[data-difficulty="expert"] .color-tile {
     border-width: 0;
     border-radius: 3px;
   }

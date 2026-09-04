@@ -10,9 +10,10 @@
   const DRAG_START_DISTANCE = 8;
   const ROW_LABELS = ["第一排", "第二排", "第三排", "第四排"];
   const DIFFICULTIES = Object.freeze({
-    easy: { label: "簡單", movableCount: 4 },
-    medium: { label: "中等", movableCount: 8 },
-    hard: { label: "困難", movableCount: 16 }
+    easy: { label: "簡單", movableCount: 4, hueRange: 80 },
+    medium: { label: "中等", movableCount: 8, hueRange: 55 },
+    hard: { label: "困難", movableCount: 16, hueRange: 35 },
+    expert: { label: "專家", movableCount: 16, hueRange: 20 }
   });
 
   const state = {
@@ -66,15 +67,17 @@
     return shuffled;
   }
 
-  function generateColors(totalCount, hueOffset) {
-    const hueStep = 360 / totalCount;
+  function generateRowColors(rowIndex, colorsPerRow, hueOffset, hueRange) {
+    const centerHue = normalizeHue(hueOffset + rowIndex * 90);
+    const startHue = centerHue - hueRange / 2;
+    const hueStep = hueRange / (colorsPerRow - 1);
 
-    return Array.from({ length: totalCount }, (_, globalIndex) => {
-      const hue = normalizeHue(hueOffset + globalIndex * hueStep);
+    return Array.from({ length: colorsPerRow }, (_, globalIndex) => {
+      const hue = normalizeHue(startHue + globalIndex * hueStep);
 
       return {
-        id: `game-${state.gameNumber}-color-${globalIndex}`,
-        globalIndex,
+        id: `game-${state.gameNumber}-row-${rowIndex}-color-${globalIndex}`,
+        globalIndex: rowIndex * colorsPerRow + globalIndex,
         hue,
         cssColor: formatOklch(hue)
       };
@@ -84,15 +87,12 @@
   function generateGame(difficultyName) {
     const difficulty = DIFFICULTIES[difficultyName];
     const colorsPerRow = difficulty.movableCount + 2;
-    const totalCount = colorsPerRow * ROW_COUNT;
     const hueOffset = Math.random() * 360;
 
     state.gameNumber += 1;
     state.difficulty = difficultyName;
-    state.colors = generateColors(totalCount, hueOffset);
     state.rows = Array.from({ length: ROW_COUNT }, (_, rowIndex) => {
-      const start = rowIndex * colorsPerRow;
-      const colors = state.colors.slice(start, start + colorsPerRow).map((color, correctPosition) => ({
+      const colors = generateRowColors(rowIndex, colorsPerRow, hueOffset, difficulty.hueRange).map((color, correctPosition) => ({
         ...color,
         correctPosition,
         rowIndex
@@ -104,6 +104,7 @@
         initialOrder: [colors[0], ...middleColors, colors[colors.length - 1]]
       };
     });
+    state.colors = state.rows.flatMap((row) => row.colors);
     state.resultErrors = null;
   }
 
@@ -163,7 +164,7 @@
       button.classList.toggle("is-active", isActive);
       button.setAttribute("aria-pressed", String(isActive));
     });
-    elements.difficultyDetail.textContent = `每排有 ${difficulty.movableCount} 個可移動色塊`;
+    elements.difficultyDetail.textContent = `每排有 ${difficulty.movableCount} 個可移動色塊，色相範圍約 ${difficulty.hueRange}°`;
     elements.gameView.dataset.difficulty = state.difficulty;
     elements.gameRows.dataset.difficulty = state.difficulty;
   }
@@ -401,18 +402,22 @@
 
     return {
       totalScore,
-      hueErrors: state.colors.map((color) => errorsById.get(color.id) ?? 0)
+      hueErrors: state.colors.map((color) => ({
+        hue: color.hue,
+        error: errorsById.get(color.id) ?? 0,
+        rowIndex: color.rowIndex
+      }))
     };
   }
 
   function drawHueSectors(context, size, outerRadius) {
     const center = size / 2;
-    const sectorAngle = (Math.PI * 2) / state.colors.length;
     const startOffset = -Math.PI / 2;
 
-    state.colors.forEach((color, index) => {
-      const startAngle = startOffset + index * sectorAngle;
-      const endAngle = startAngle + sectorAngle + 0.002;
+    for (let index = 0; index < 360; index += 1) {
+      const startAngle = startOffset + (index * Math.PI * 2) / 360;
+      const endAngle = startOffset + ((index + 1) * Math.PI * 2) / 360 + 0.002;
+      const color = { cssColor: formatOklch(index) };
 
       context.beginPath();
       context.moveTo(center, center);
@@ -420,7 +425,7 @@
       context.closePath();
       context.fillStyle = color.cssColor;
       context.fill();
-    });
+    }
 
     context.beginPath();
     context.arc(center, center, outerRadius, 0, Math.PI * 2);
@@ -452,42 +457,38 @@
   function drawErrorProfile(context, size, innerRadius, profileRadius) {
     const center = size / 2;
     const errors = state.resultErrors;
-    const step = (Math.PI * 2) / errors.length;
     const maxError = Math.max(1, DIFFICULTIES[state.difficulty].movableCount - 1);
-    const points = errors.map((error, index) => {
-      const angle = -Math.PI / 2 + index * step;
-      const radius = innerRadius + (error / maxError) * (profileRadius - innerRadius);
-      return {
-        x: center + Math.cos(angle) * radius,
-        y: center + Math.sin(angle) * radius
-      };
-    });
+    const rows = Array.from({ length: ROW_COUNT }, (_, rowIndex) => errors.filter((item) => item.rowIndex === rowIndex));
 
-    context.save();
-    context.beginPath();
-    points.forEach((point, index) => {
-      if (index === 0) context.moveTo(point.x, point.y);
-      else context.lineTo(point.x, point.y);
-    });
-    context.closePath();
-    context.fillStyle = "rgba(255, 255, 255, 0.10)";
-    context.fill();
-    context.shadowColor = "rgba(0, 0, 0, 0.5)";
-    context.shadowBlur = 7;
-    context.strokeStyle = "#ffffff";
-    context.lineWidth = Math.max(2, size * 0.005);
-    context.lineJoin = "round";
-    context.stroke();
-    context.restore();
+    rows.forEach((rowErrors) => {
+      const points = rowErrors.map(({ hue, error }) => {
+        const angle = -Math.PI / 2 + (hue * Math.PI * 2) / 360;
+        const radius = innerRadius + (error / maxError) * (profileRadius - innerRadius);
+        return { x: center + Math.cos(angle) * radius, y: center + Math.sin(angle) * radius };
+      });
+      if (!points.length) return;
 
-    context.save();
-    context.fillStyle = "rgba(255, 255, 255, 0.9)";
-    points.forEach((point) => {
+      context.save();
       context.beginPath();
-      context.arc(point.x, point.y, Math.max(1.3, size * 0.0035), 0, Math.PI * 2);
-      context.fill();
+      points.forEach((point, index) => index === 0 ? context.moveTo(point.x, point.y) : context.lineTo(point.x, point.y));
+      context.strokeStyle = "#ffffff";
+      context.lineWidth = Math.max(2, size * 0.005);
+      context.lineJoin = "round";
+      context.lineCap = "round";
+      context.shadowColor = "rgba(0, 0, 0, 0.5)";
+      context.shadowBlur = 7;
+      context.stroke();
+      context.restore();
+
+      context.save();
+      context.fillStyle = "rgba(255, 255, 255, 0.9)";
+      points.forEach((point) => {
+        context.beginPath();
+        context.arc(point.x, point.y, Math.max(1.3, size * 0.0035), 0, Math.PI * 2);
+        context.fill();
+      });
+      context.restore();
     });
-    context.restore();
   }
 
   function renderResultChart() {
