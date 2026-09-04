@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="使用 OKLCH 色彩的知覺顏色排序測驗。">
+  <meta name="theme-color" content="#090d13">
+  <title>顏色排序遊戲</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <main class="site-shell">
+    <header class="intro">
+      <div>
+        <p class="eyebrow">知覺色彩測試</p>
+        <h1>顏色排序遊戲</h1>
+      </div>
+      <p class="intro-copy">
+        重新排列每一排的色塊，讓顏色形成最平滑的漸層。
+        兩端色塊固定不動，測驗沒有計時，可以慢慢觀察。
+      </p>
+    </header>
+
+    <section class="difficulty-panel" aria-labelledby="difficulty-title">
+      <div>
+        <p class="control-label" id="difficulty-title">難度</p>
+        <p class="difficulty-detail" id="difficultyDetail">每排有 4 個可移動色塊</p>
+      </div>
+      <div class="segmented-control" role="group" aria-label="選擇難度">
+        <button class="difficulty-button is-active" type="button" data-difficulty="easy" aria-pressed="true">簡單</button>
+        <button class="difficulty-button" type="button" data-difficulty="medium" aria-pressed="false">中等</button>
+        <button class="difficulty-button" type="button" data-difficulty="hard" aria-pressed="false">困難</button>
+      </div>
+    </section>
+
+    <section class="game-view" id="gameView" aria-labelledby="game-heading">
+      <div class="game-heading-row">
+        <div>
+          <h2 id="game-heading">排列四組漸層</h2>
+          <p>拖曳中間的色塊進行排序，也可以選取色塊後使用左右方向鍵移動。</p>
+        </div>
+        <div class="fixed-key" aria-label="圓點表示固定端點">
+          <span class="fixed-key-dot" aria-hidden="true"></span>
+          固定端點
+        </div>
+      </div>
+
+      <div class="game-rows" id="gameRows" data-difficulty="easy"></div>
+
+      <div class="game-actions">
+        <button class="primary-button" id="submitButton" type="button">完成測驗</button>
+        <p>分數越低越好，0 分代表完美排序。</p>
+      </div>
+    </section>
+
+    <section class="result-view" id="resultView" aria-labelledby="result-heading" hidden>
+      <div class="result-summary">
+        <p class="eyebrow" id="resultDifficulty">簡單難度結果</p>
+        <h2 id="result-heading">測試結果</h2>
+        <output class="score" id="scoreOutput" aria-live="polite">0</output>
+        <p class="score-note">分數越低越好。<br>完美分數：0。</p>
+        <div class="score-formula" aria-label="分數計算方式">
+          <p class="score-formula-title">分數怎麼計算？</p>
+          <p class="formula">總分 = Σ |玩家位置 − 正確位置|</p>
+          <p>逐一計算每個色塊的位置誤差，再將四排的誤差全部加總。</p>
+        </div>
+        <button class="primary-button" id="playAgainButton" type="button">再玩一次</button>
+      </div>
+
+      <figure class="profile-panel">
+        <figcaption>
+          <p class="eyebrow">結果分析</p>
+          <h2>色相誤差分布圖</h2>
+          <p>
+            白色輪廓越向外延伸，代表該色相區域的排序誤差越大；
+            越靠近圓心，代表排序越準確。
+          </p>
+        </figcaption>
+        <div class="chart-wrap">
+          <canvas id="errorChart" role="img" aria-label="圓形色相誤差分布圖">
+            你的瀏覽器不支援顯示結果圖表。
+          </canvas>
+          <div class="chart-label chart-label--center">較準確</div>
+          <div class="chart-label chart-label--edge">誤差較大</div>
+        </div>
+      </figure>
+    </section>
+
+    <p class="sr-only" id="interactionStatus" aria-live="polite"></p>
+  </main>
+</body>
+</html>
